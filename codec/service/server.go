@@ -18,13 +18,13 @@ import (
 
 // Server represents an RPC Server.
 type Server struct {
-	serviceMap sync.Map
+	ServiceMap sync.Map
 }
 
 // NewServer returns a new Server.
 func NewServer() *Server {
 	return &Server{
-		serviceMap: sync.Map{},
+		ServiceMap: sync.Map{},
 	}
 }
 
@@ -34,7 +34,7 @@ var DefaultServer = NewServer()
 // Register publishes in the server the set of methods of the
 func (server *Server) Register(rcvr interface{}) error {
 	s := newService(rcvr)
-	if _, dup := server.serviceMap.LoadOrStore(s.name, s); dup {
+	if _, dup := server.ServiceMap.LoadOrStore(s.name, s); dup {
 		return errors.New("rpc: service already defined: " + s.name)
 	}
 	return nil
@@ -43,20 +43,20 @@ func (server *Server) Register(rcvr interface{}) error {
 // Register publishes the receiver's methods in the DefaultServer.
 func Register(rcvr interface{}) error { return DefaultServer.Register(rcvr) }
 
-func (server *Server) findService(serviceMethod string) (svc *service, mtype *MethodType, err error) {
+func (server *Server) findService(serviceMethod string) (svc *Service, mtype *MethodType, err error) {
 	dot := strings.LastIndex(serviceMethod, ".")
 	if dot < 0 {
 		err = errors.New("rpc server: service/method request ill-formed: " + serviceMethod)
 		return
 	}
 	serviceName, methodName := serviceMethod[:dot], serviceMethod[dot+1:]
-	svci, ok := server.serviceMap.Load(serviceName)
+	svci, ok := server.ServiceMap.Load(serviceName)
 	if !ok {
 		err = errors.New("rpc server: can't find service " + serviceName)
 		return
 	}
-	svc = svci.(*service)
-	mtype = svc.method[methodName]
+	svc = svci.(*Service)
+	mtype = svc.Method[methodName]
 	if mtype == nil {
 		err = errors.New("rpc server: can't find method " + methodName)
 	}
@@ -68,7 +68,7 @@ type request struct {
 	h            *codec.Header // header of request
 	argv, replyv reflect.Value // argv and replyv of request
 	mtype        *MethodType
-	svc          *service
+	svc          *Service
 }
 
 func (server *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
@@ -308,11 +308,11 @@ type debugService struct {
 func (server debugHTTP) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Build a sorted version of the data.
 	var services []debugService
-	server.serviceMap.Range(func(namei, svci interface{}) bool {
-		svc := svci.(*service)
+	server.ServiceMap.Range(func(namei, svci interface{}) bool {
+		svc := svci.(*Service)
 		services = append(services, debugService{
 			Name:   namei.(string),
-			Method: svc.method,
+			Method: svc.Method,
 		})
 		return true
 	})

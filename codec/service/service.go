@@ -43,15 +43,15 @@ func (m *MethodType) newReplyv() reflect.Value {
 }
 
 // 定义服务
-type service struct {
+type Service struct {
 	name   string
 	typ    reflect.Type
 	rcvr   reflect.Value
-	method map[string]*MethodType
+	Method map[string]*MethodType
 }
 
-func newService(rcvr interface{}) *service {
-	s := new(service)
+func newService(rcvr interface{}) *Service {
+	s := new(Service)
 	s.rcvr = reflect.ValueOf(rcvr)
 	s.name = reflect.Indirect(s.rcvr).Type().Name()
 	s.typ = reflect.TypeOf(rcvr)
@@ -62,8 +62,8 @@ func newService(rcvr interface{}) *service {
 	return s
 }
 
-func (s *service) registerMethods() {
-	s.method = make(map[string]*MethodType)
+func (s *Service) registerMethods() {
+	s.Method = make(map[string]*MethodType)
 	for i := 0; i < s.typ.NumMethod(); i++ {
 		method := s.typ.Method(i)
 		mType := method.Type
@@ -77,7 +77,7 @@ func (s *service) registerMethods() {
 		if !isExportedOrBuiltinType(argType) || !isExportedOrBuiltinType(replyType) {
 			continue
 		}
-		s.method[method.Name] = &MethodType{
+		s.Method[method.Name] = &MethodType{
 			method:    method,
 			ArgType:   argType,
 			ReplyType: replyType,
@@ -86,7 +86,7 @@ func (s *service) registerMethods() {
 	}
 }
 
-func (s *service) call(m *MethodType, argv, replyv reflect.Value) error {
+func (s *Service) call(m *MethodType, argv, replyv reflect.Value) error {
 	atomic.AddUint64(&m.numCalls, 1)
 	f := m.method.Func
 	returnValues := f.Call([]reflect.Value{s.rcvr, argv, replyv})

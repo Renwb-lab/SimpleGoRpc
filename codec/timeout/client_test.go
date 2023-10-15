@@ -1,6 +1,7 @@
 package timeout
 
 import (
+	"SimpleGoRpc/codec/client"
 	clientPkg "SimpleGoRpc/codec/client"
 	"SimpleGoRpc/codec/service"
 	"context"
@@ -27,11 +28,11 @@ func TestClient_dialTimeout(t *testing.T) {
 		return nil, nil
 	}
 	t.Run("timeout", func(t *testing.T) {
-		_, err := dialTimeout(f, "tcp", l.Addr().String(), &service.Option{ConnectTimeout: time.Second})
+		_, err := client.DialTimeout(f, "tcp", l.Addr().String(), &service.Option{ConnectTimeout: time.Second})
 		_assert(err != nil && strings.Contains(err.Error(), "connect timeout"), "expect a timeout error")
 	})
 	t.Run("0", func(t *testing.T) {
-		_, err := dialTimeout(f, "tcp", l.Addr().String(), &service.Option{ConnectTimeout: 0})
+		_, err := client.DialTimeout(f, "tcp", l.Addr().String(), &service.Option{ConnectTimeout: 0})
 		_assert(err == nil, "0 means no limit")
 	})
 }
